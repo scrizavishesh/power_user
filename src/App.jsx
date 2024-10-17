@@ -8,7 +8,6 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<PaymentURl />} />
-          {/* <Route path="*" element={<PageNotFound />} /> */}
         </Routes>
       </BrowserRouter>
     </>
