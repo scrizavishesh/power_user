@@ -4,8 +4,11 @@ import { toast } from 'react-toastify';
 import { createOrder, createFund } from '../Utils/Apis';
 
 const PaymentURl = () => {
+
+    const token = 'd21cb51ed49203f081debb4e490684018b6adccc'
+
     const [scannerData, setScannerData] = useState(null);
-    const [PaymentURL_Data, setPaymentURL_Data] = useState(null)
+    const [PaymentURL_Data, setPaymentURL_Data] = useState(null);
     const [timeLeft, setTimeLeft] = useState(180);
     const [active, setActive] = useState(false);
     const [minutes, setMinutes] = useState(0);
@@ -14,8 +17,6 @@ const PaymentURl = () => {
     const [showLoader, setShowLoader] = useState(false);
 
     const secretKey = "django-insecure-t4c5!_l0l$#@@o0+#=crk84#2662ev(f6ir@#)y%pzz2r&h&k%";
-
- 
 
     const CreatePayment = async () => {
         if (amount === "") {
@@ -31,19 +32,42 @@ const PaymentURl = () => {
             setShowLoader(true);
             const response = await createOrder(data, hmac);
             if (response.status === 201) {
-                setPaymentURL_Data(response.data);
+                const orderData = response.data;
+                setPaymentURL_Data(orderData);
                 toast.success("Order Created Successfully");
                 setAmount("");
                 setActive(true);
-                MakePayment(response.data);
+                MakePayment(orderData);
+                const order_id = orderData.order_id;
+                const ws = new WebSocket(`wss://auth2.upicollect.com/ws/order_status/${order_id}/?token=${token}`);
+
+                ws.onopen = () => {
+                    console.log('Connected to WebSocket for order status.');
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        console.log('Order status update received:', message);
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+
+                ws.onclose = () => {
+                    console.log('WebSocket connection closed.');
+                };
             }
         } catch (err) {
             console.error("Error creating order:", err);
-           alert(err?.response?.data?.[0] || "Failed to create order");
+            alert(err?.response?.data?.[0] || "Failed to create order");
             setShowLoader(false);
         }
     };
-
 
     const MakePayment = async (data) => {
         try {
@@ -54,46 +78,6 @@ const PaymentURl = () => {
             }
         } catch (err) {
             console.error(err);
-        }
-    };
-
-    useEffect(() => {
-
-    }, [])
-
-
-    const handlePaymentRedirect = (platform) => {
-        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        let url = '';
-
-        switch (platform) {
-            case 'google':
-                url = isMobile
-                    ? `intent://pay?pa=${scannerData?.upi_id}&am=${amount}&cu=INR&tn=${scannerData?.receipt_id}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user`
-                    : `https://pay.google.com/gp/v/gpc?amount=${amount}`;
-                break;
-            case 'phonepe':
-                url = isMobile
-                    ? `intent://pay?pa=${scannerData?.upi_id}&am=${amount}&cu=INR&tn=${scannerData?.receipt_id}#Intent;scheme=upi;package=com.phonepe.app`
-                    : 'https://www.phonepe.com';
-                break;
-            case 'paytm':
-                url = isMobile
-                    ? `intent://pay?pa=${scannerData?.upi_id}&am=${amount}&cu=INR&tn=${scannerData?.receipt_id}#Intent;scheme=upi;package=net.one97.paytm;end`
-                    : 'https://paytm.com/';
-                break;
-            default:
-                break;
-        }
-
-        window.location.href = url;
-    };
-
-    const handleUPI = () => {
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            window.location.href = `upi://pay?pa=${scannerData?.upi_id}&pn=demo2&tn=${receipt}&am=${amount}&cu=INR`;
-        } else {
-            window.location.href = `https://pay.google.com/gp/v/gpc?amount=${amount}`;
         }
     };
 
