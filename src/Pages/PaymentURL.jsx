@@ -1,88 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import CryptoJS from 'crypto-js';
-import { toast } from 'react-toastify';
-import { createOrder, createFund } from '../Utils/Apis';
+import { createFund } from '../Utils/Apis';
 
 const PaymentURl = () => {
-    const { amount } = useParams();
-    const token = 'd21cb51ed49203f081debb4e490684018b6adccc'
-
+    const { order_id, receipt_id, agent_id, amount } = useParams();
     const [scannerData, setScannerData] = useState(null);
-    const [PaymentURL_Data, setPaymentURL_Data] = useState(null);
     const [timeLeft, setTimeLeft] = useState(180);
-    const [active, setActive] = useState(false);
     const [minutes, setMinutes] = useState(0);
     const [seconds, setSeconds] = useState(0);
-    const [showLoader, setShowLoader] = useState(false);
-
-    const secretKey = "django-insecure-t4c5!_l0l$#@@o0+#=crk84#2662ev(f6ir@#)y%pzz2r&h&k%";
+    const hasRun = useRef(false); // Use a ref to track if the effect has run
 
     useEffect(() => {
-        if (amount) {
-            CreatePayment(amount); 
+        if (!hasRun.current) {
+            hasRun.current = true; // Mark as run after first execution
+            MakePayment({
+                order_id,
+                receipt: receipt_id,
+                agent: agent_id,
+                payment_amount: amount
+            });
         }
-    }, [amount]);
-
-    const CreatePayment = async () => {
-        if (amount === "") {
-            toast.error("Amount is required");
-            return;
-        }
-        const data = {
-            amount: parseFloat(amount)
-        };
-        const hmac = CryptoJS.HmacSHA256(JSON.stringify(data), secretKey).toString();
-
-        try {
-            setShowLoader(true);
-            const response = await createOrder(data, hmac);
-            if (response.status === 201) {
-                const orderData = response.data;
-                setPaymentURL_Data(orderData);
-                toast.success("Order Created Successfully");
-                setActive(true);
-                MakePayment(orderData);
-                const order_id = orderData.order_id;
-                const ws = new WebSocket(`wss://auth2.upicollect.com/ws/order_status/${order_id}/?token=${token}`);
-
-                ws.onopen = () => {
-                    console.log('Connected to WebSocket for order status.');
-                };
-
-                ws.onmessage = (event) => {
-                    try {
-                        const message = JSON.parse(event.data);
-                        console.log('Order status update received:', message);
-                    } catch (error) {
-                        console.error('Error parsing WebSocket message:', error);
-                    }
-                };
-
-                ws.onerror = (error) => {
-                    console.error('WebSocket error:', error);
-                };
-
-                ws.onclose = () => {
-                    console.log('WebSocket connection closed.');
-                };
-            }
-        } catch (err) {
-            console.error("Error creating order:", err);
-            alert(err?.response?.data?.[0] || "Failed to create order");
-            setShowLoader(false);
-        }
-    };
+    }, [order_id, receipt_id, agent_id, amount]);
 
     const MakePayment = async (data) => {
         try {
             const response = await createFund(data?.order_id, data?.receipt, data?.agent, data?.payment_amount);
             if (response?.status === 200) {
-                setActive(true);
                 setScannerData(response?.data);
             }
         } catch (err) {
-            console.error(err);
+            console.log(err);
+            alert(err?.response?.data?.error);
         }
     };
 
