@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { createFund } from '../Utils/Apis';
 
 const PaymentURl = () => {
-    const { order_id, receipt_id, agent_id, amount } = useParams();
+    const { order_id, signature } = useParams();
     const [scannerData, setScannerData] = useState(null);
     const [timeLeft, setTimeLeft] = useState(180);
     const [minutes, setMinutes] = useState(0);
@@ -13,18 +13,13 @@ const PaymentURl = () => {
     useEffect(() => {
         if (!hasRun.current) {
             hasRun.current = true; // Mark as run after first execution
-            MakePayment({
-                order_id,
-                receipt: receipt_id,
-                agent: agent_id,
-                payment_amount: amount
-            });
+            MakePayment({ order_id, signature });
         }
-    }, [order_id, receipt_id, agent_id, amount]);
+    }, [order_id, signature]);
 
     const MakePayment = async (data) => {
         try {
-            const response = await createFund(data?.order_id, data?.receipt, data?.agent, data?.payment_amount);
+            const response = await createFund(data?.order_id, data?.signature);
             if (response?.status === 200) {
                 setScannerData(response?.data);
             }
