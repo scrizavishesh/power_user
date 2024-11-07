@@ -13,19 +13,20 @@ const PaymentURl = () => {
     useEffect(() => {
         if (!hasRun.current) {
             hasRun.current = true; // Mark as run after first execution
-            MakePayment({ order_id, signature });
+            MakePayment({ order_id: order_id, signature: signature });
         }
     }, [order_id, signature]);
 
     const MakePayment = async (data) => {
         try {
             const response = await createFund(data?.order_id, data?.signature);
+            console.log(response);
             if (response?.status === 200) {
                 setScannerData(response?.data);
             }
         } catch (err) {
             console.log(err);
-            alert(err?.response?.data?.error);
+            // alert(err?.response?.data?.error);
         }
     };
 

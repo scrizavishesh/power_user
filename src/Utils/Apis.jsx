@@ -5,9 +5,9 @@ export const API_URL = "https://auth2.upicollect.com";
 var bearerToken = `Token d21cb51ed49203f081debb4e490684018b6adccc`
 
 
-export const createFund = async ( orderId, recId, id, amount) => {
+export const createFund = async ( orderId, sign) => {
   axios.defaults.headers.common["Authorization"] = "";
-  var response = await axios.get(`${API_URL}/api/payments/create?order_id=${orderId}&receipt_id=${recId}&id=${id}&amount=${amount}`,);
+  var response = await axios.get(`${API_URL}/api/payments/create?order_id=${orderId}&signature=${sign}`);
   if (response) {
     return response;
   } else {
