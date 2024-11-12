@@ -12,7 +12,10 @@ const PaymentURl = () => {
 
     const [showModal, setShowModal] = useState(false);
     const handleShowModal = () => setShowModal(true);
-    const handleCloseModal = () => setShowModal(false);
+    const handleCloseModal = () => {
+        setShowModal(false);
+        window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/1"
+    }
 
     useEffect(() => {
         const socket = new WebSocket(`wss://auth2.upicollect.com/ws/order_status/${order_id}/?token=d21cb51ed49203f081debb4e490684018b6adccc`);
@@ -26,6 +29,9 @@ const PaymentURl = () => {
             console.log(data, "Websocket Data")
             if (data.approval_status === 'APPROVED') {
                 setShowModal(true);
+                setTimeout(() => {
+                    window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/1"
+                }, 2000);
             }
         };
 
@@ -59,6 +65,7 @@ const PaymentURl = () => {
         } catch (err) {
             console.log(err);
             alert(err?.response?.data?.error);
+            window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2"
         }
     };
 
@@ -67,6 +74,7 @@ const PaymentURl = () => {
             setTimeLeft((prevTimeLeft) => {
                 if (prevTimeLeft <= 0) {
                     clearInterval(timer);
+                    window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2"
                     return 0;
                 }
                 return prevTimeLeft - 1;
