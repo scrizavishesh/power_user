@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from "axios";
 import { useParams } from 'react-router-dom';
 import { createFund } from '../Utils/Apis';
 
@@ -9,85 +10,82 @@ const PaymentURl = () => {
     const [minutes, setMinutes] = useState(0);
     const [seconds, setSeconds] = useState(0);
     const hasRun = useRef(false);
-
+    const apiCalledRef = useRef(false);
     const [showModal, setShowModal] = useState(false);
+
     const handleShowModal = () => setShowModal(true);
     const handleCloseModal = () => {
         setShowModal(false);
-        window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/1"
-    }
+        window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/1";
+    };
 
     useEffect(() => {
         const socket = new WebSocket(`wss://auth2.upicollect.com/ws/order_status/${order_id}/?token=d21cb51ed49203f081debb4e490684018b6adccc`);
 
-        socket.onopen = () => {
-            console.log('WebSocket connection established');
-        };
-
-        socket.onmessage = (event) => {
+        const onSocketMessage = (event) => {
             const data = JSON.parse(event.data);
-            console.log(data, "Websocket Data")
-            if (data.approval_status === 'APPROVED') {
+            console.log(data, "WebSocket Data");
+            if (data.approval_status === "APPROVED") {
                 setShowModal(true);
                 setTimeout(() => {
-                    window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/1"
+                    window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/1";
                 }, 15000);
             }
         };
 
+        socket.addEventListener("message", onSocketMessage);
+
+        socket.onopen = () => {
+            console.log("WebSocket connection established");
+        };
+
         socket.onclose = () => {
-            console.log('WebSocket connection closed');
+            console.log("WebSocket connection closed");
         };
 
         socket.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            console.error("WebSocket error:", error);
         };
 
         return () => {
+            socket.removeEventListener("message", onSocketMessage);
             socket.close();
         };
-    }, []);
+    }, [order_id]);
 
     useEffect(() => {
         if (!hasRun.current) {
             hasRun.current = true; // Mark as run after first execution
-            MakePayment({ order_id: order_id, signature: signature });
+            MakePayment({ order_id, signature });
         }
     }, [order_id, signature]);
 
     const MakePayment = async (data) => {
         try {
-            const response = await createFund(data?.order_id, data?.signature);
+            const response = await createFund(data.order_id, data.signature);
             console.log(response);
-            if (response?.status === 200) {
-                setScannerData(response?.data);
+            if (response.status === 200) {
+                setScannerData(response.data);
             }
         } catch (err) {
-            console.log(err);
+            console.error(err);
             alert(err?.response?.data?.error);
-            setTimeout(() => {
-                window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2"
-            }, 15000);
-
+            axios.post("https://pay-sb1.ddtechlabs.com/PowerPay/Result?id=2")
+                .then((response) => {
+                    console.log("API Response:", response);
+                    setTimeout(() => {
+                        window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2";
+                    }, 15000);
+                })
+                .catch((error) => console.error("Error:", error));
         }
     };
 
     useEffect(() => {
         const timer = setInterval(() => {
             setTimeLeft((prevTimeLeft) => {
-                if (prevTimeLeft <= 0) {
+                if (prevTimeLeft <= 1) {
                     clearInterval(timer);
-                    fetch("https://pay-sb1.ddtechlabs.com/PowerPay/Result?id=2")
-                        .then((response) => response.json())
-                        .then((data) => {
-                            console.log("API Response:", data);
-
-                            // Redirect after 15 seconds
-                            setTimeout(() => {
-                                window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2";
-                            }, 15000);
-                        })
-                        .catch((error) => console.error("Error:", error));
                     return 0;
                 }
                 return prevTimeLeft - 1;
@@ -96,6 +94,21 @@ const PaymentURl = () => {
 
         return () => clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        // Trigger the Axios POST call when timeLeft hits 0, ensuring it's called only once
+        if (timeLeft === 0 && !apiCalledRef.current) {
+            apiCalledRef.current = true; // Mark as called to prevent duplicate API calls
+            axios.post("https://pay-sb1.ddtechlabs.com/PowerPay/Result?id=2")
+                .then((response) => {
+                    console.log("API Response:", response);
+                    setTimeout(() => {
+                        window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2";
+                    }, 15000);
+                })
+                .catch((error) => console.error("Error:", error));
+        }
+    }, [timeLeft]);
 
     useEffect(() => {
         setMinutes(Math.floor(timeLeft / 60));
@@ -171,9 +184,6 @@ const PaymentURl = () => {
 
 
             <div className="payment-modal-container">
-                <button className="btn primary-btn" onClick={handleShowModal}>
-                    Show Payment Success Modal
-                </button>
                 {showModal && (
                     <div className="modal-overlay" role="dialog" aria-modal="true">
                         <div className="modal-dialog animated-zoom">
