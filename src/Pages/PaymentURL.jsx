@@ -31,7 +31,7 @@ const PaymentURl = () => {
                 setShowModal(true);
                 setTimeout(() => {
                     window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/1"
-                }, 2000);
+                }, 15000);
             }
         };
 
@@ -65,7 +65,10 @@ const PaymentURl = () => {
         } catch (err) {
             console.log(err);
             alert(err?.response?.data?.error);
-            window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2"
+            setTimeout(() => {
+                window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2"
+            }, 15000);
+
         }
     };
 
@@ -74,7 +77,17 @@ const PaymentURl = () => {
             setTimeLeft((prevTimeLeft) => {
                 if (prevTimeLeft <= 0) {
                     clearInterval(timer);
-                    window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2"
+                    fetch("https://pay-sb1.ddtechlabs.com/PowerPay/Result?id=2")
+                        .then((response) => response.json())
+                        .then((data) => {
+                            console.log("API Response:", data);
+
+                            // Redirect after 15 seconds
+                            setTimeout(() => {
+                                window.location.href = "https://pay-sb1.ddtechlabs.com/PowerPay/Finally/2/2";
+                            }, 15000);
+                        })
+                        .catch((error) => console.error("Error:", error));
                     return 0;
                 }
                 return prevTimeLeft - 1;
