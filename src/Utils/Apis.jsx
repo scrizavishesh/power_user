@@ -2,7 +2,7 @@ import axios from "axios";
 
 export const API_URL = "https://auth2.upicollect.com";
 
-var bearerToken = `Token d21cb51ed49203f081debb4e490684018b6adccc`
+var bearerToken = `Token 50bac6ff4fc2d47fa778c6005d547a526a1d827d`
 
 
 export const createFund = async ( orderId, sign) => {
